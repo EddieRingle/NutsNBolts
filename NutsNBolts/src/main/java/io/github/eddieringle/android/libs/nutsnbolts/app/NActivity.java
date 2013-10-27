@@ -4,10 +4,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActionBarDrawerToggle;
-import android.support.v4.view.GravityCompat;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -87,7 +86,7 @@ public class NActivity extends ActionBarActivity {
         mPrefsEditor = mPrefs.edit();
     }
 
-    void replaceLayout() {
+    private boolean replaceLayout() {
         int drawerWidth;
         DrawerLayout.LayoutParams leftLps;
         ViewGroup contentFrame;
@@ -96,7 +95,7 @@ public class NActivity extends ActionBarActivity {
         ViewGroup parent = (ViewGroup) content.getParent();
         if (mDrawerEnabled) {
             if (mDrawerLayout != null) {
-                return;
+                return false;
             }
             mDrawerLayout = new DrawerLayout(NActivity.this);
             contentFrame = new FrameLayout(NActivity.this);
@@ -135,18 +134,36 @@ public class NActivity extends ActionBarActivity {
             parent.removeView(content);
             contentFrame.addView(content);
             parent.addView(mDrawerLayout);
+            return true;
         } else {
             if (mDrawerLayout != null) {
                 mDrawerLayout = null;
                 mDrawerToggle = null;
             }
         }
+        return false;
     }
 
-    public void requestDrawer(Class<? extends NFragment> clazz) {
+    public boolean requestDrawer(Class<? extends NFragment> clazz) {
+        final FragmentManager fm;
+        final NFragment drawerFragment;
         mDrawerClazz = clazz;
         if (mDrawerClazz != null) {
+            try {
+                mDrawerEnabled = true;
+                if (replaceLayout()) {
+                    drawerFragment = mDrawerClazz.newInstance();
+                    fm = getSupportFragmentManager();
+                    fm.beginTransaction()
+                      .add(R.id.left_drawer, drawerFragment, mDrawerClazz.getName())
+                      .commit();
+                    return true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        return false;
     }
 
 }
