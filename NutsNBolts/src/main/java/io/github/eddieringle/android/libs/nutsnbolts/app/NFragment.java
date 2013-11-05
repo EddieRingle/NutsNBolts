@@ -1,10 +1,10 @@
 package io.github.eddieringle.android.libs.nutsnbolts.app;
 
+import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.ActionBar;
 import android.view.Menu;
 import android.view.MenuInflater;
 
@@ -44,7 +44,7 @@ public class NFragment extends Fragment {
             return;
         }
         mCreateActionBarCalled = false;
-        onCreateActionBar(getBaseActivity().getSupportActionBar(), menu, inflater);
+        onCreateActionBar(getBaseActivity().getActionBar(), menu, inflater);
         if (!mCreateActionBarCalled) {
             throw new IllegalStateException("You must call super() in onCreateActionBar()");
         }
