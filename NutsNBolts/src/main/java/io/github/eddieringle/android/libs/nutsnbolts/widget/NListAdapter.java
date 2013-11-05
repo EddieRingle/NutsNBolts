@@ -30,6 +30,7 @@ public abstract class NListAdapter<T> extends BaseAdapter {
         return mData.size();
     }
 
+    @Override
     public T getItem(int position) {
         return mData.get(position);
     }
@@ -75,12 +76,16 @@ public abstract class NListAdapter<T> extends BaseAdapter {
         fillWithItems(data, false);
     }
 
+    public ArrayList<T> getAll() {
+        return mData;
+    }
+
     public Context getContext() {
         return mContext;
     }
 
-    public ArrayList<T> getAll() {
-        return mData;
+    public LayoutInflater getInflater() {
+        return mInflater;
     }
 
     public void remove(int position) {

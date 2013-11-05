@@ -39,7 +39,7 @@ public abstract class NListFragment<T> extends NFragment
         super.onActivityCreated(savedInstanceState);
         mListView.setOnItemClickListener(this);
         mListView.setOnItemLongClickListener(this);
-        mListView.setAdapter(null);
+        mListView.setAdapter(new HeaderFooterListAdapter<NListAdapter<T>>(mListView, onCreateListAdapter()));
     }
 
     @Override
