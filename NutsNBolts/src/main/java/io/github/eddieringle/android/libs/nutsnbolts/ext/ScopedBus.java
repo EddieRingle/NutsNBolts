@@ -6,12 +6,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import io.github.eddieringle.android.libs.nutsnbolts.app.NApplication;
+import io.github.eddieringle.android.libs.nutsnbolts.app.NBusProvider;
 
 public class ScopedBus {
 
     private boolean mActive;
 
-    private final Bus mBus = NApplication.getBus();
+    private final Bus mBus = NBusProvider.getBus();
 
     private final Set<Object> mObjects = new HashSet<Object>();
 
