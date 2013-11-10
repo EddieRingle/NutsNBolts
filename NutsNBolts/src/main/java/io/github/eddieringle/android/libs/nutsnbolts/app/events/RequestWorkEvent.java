@@ -1,6 +1,6 @@
 package io.github.eddieringle.android.libs.nutsnbolts.app.events;
 
-public class RequestWorkEvent {
+public final class RequestWorkEvent {
 
     private Callbacks mCallbacks;
 
