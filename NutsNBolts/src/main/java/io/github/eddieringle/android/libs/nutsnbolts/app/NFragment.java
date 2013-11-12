@@ -63,4 +63,8 @@ public class NFragment extends Fragment {
         bar.setHomeButtonEnabled(true);
         bar.setDisplayShowHomeEnabled(true);
     }
+
+    public boolean queueWorkRequest(RequestWorkEvent event) {
+        return NApplication.getWorkManager().queueRequest(getBaseActivity(), event);
+    }
 }

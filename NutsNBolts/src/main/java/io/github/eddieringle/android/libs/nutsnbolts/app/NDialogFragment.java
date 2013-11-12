@@ -63,4 +63,8 @@ public class NDialogFragment extends DialogFragment {
         bar.setHomeButtonEnabled(true);
         bar.setDisplayShowHomeEnabled(true);
     }
+
+    public boolean queueWorkRequest(RequestWorkEvent event) {
+        return getBaseActivity().queueWorkRequest(event);
+    }
 }

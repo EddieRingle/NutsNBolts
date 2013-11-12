@@ -2,13 +2,8 @@ package io.github.eddieringle.android.libs.nutsnbolts.app;
 
 import android.app.Activity;
 import android.app.FragmentManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
@@ -19,17 +14,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import java.util.concurrent.LinkedBlockingQueue;
-
 import io.github.eddieringle.android.libs.nutsnbolts.R;
-import io.github.eddieringle.android.libs.nutsnbolts.app.events.RequestWorkEvent;
 import io.github.eddieringle.android.libs.nutsnbolts.ext.ScopedBus;
 
 public class NActivity extends Activity {
 
     public static int NO_LAYOUT = -1;
-
-    private boolean mBoundToWorkerService = false;
 
     private boolean mDrawerEnabled = false;
 
@@ -40,10 +30,6 @@ public class NActivity extends Activity {
     private Class<? extends NFragment> mDrawerClazz;
 
     private DrawerLayout mDrawerLayout;
-
-    private LinkedBlockingQueue<RequestWorkEvent> mWorkRequests;
-
-    private NServiceConnection mServiceConnection = new NServiceConnection();
 
     private ScopedBus mBus = new ScopedBus();
 
@@ -73,12 +59,6 @@ public class NActivity extends Activity {
     }
 
     @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        mBoundToWorkerService = savedInstanceState.getBoolean("boundToWorkerService");
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
         getBus().resumed();
@@ -87,25 +67,19 @@ public class NActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean("boundToWorkerService", mBoundToWorkerService);
+        NApplication.getWorkManager().saveState(this, outState);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (!mBoundToWorkerService) {
-            Intent intent = new Intent(getApplicationContext(), WorkerService.class);
-            bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
+        NApplication.getWorkManager().readyActivity(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (mBoundToWorkerService) {
-            unbindService(mServiceConnection);
-            mBoundToWorkerService = false;
-        }
+        NApplication.getWorkManager().releaseActivity(this);
     }
 
     public ScopedBus getBus() {
@@ -130,21 +104,11 @@ public class NActivity extends Activity {
         }
         mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         mPrefsEditor = mPrefs.edit();
-        mWorkRequests = new LinkedBlockingQueue<RequestWorkEvent>();
+        NApplication.getWorkManager().restoreState(this, savedInstanceState);
     }
 
     public boolean queueWorkRequest(RequestWorkEvent event) {
-        if (mBoundToWorkerService) {
-            getBus().post(event);
-            return true;
-        } else {
-            try {
-                mWorkRequests.put(event);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return false;
+        return NApplication.getWorkManager().queueRequest(NActivity.this, event);
     }
 
     private boolean replaceLayout() {
@@ -225,22 +189,5 @@ public class NActivity extends Activity {
             }
         }
         return false;
-    }
-
-    private class NServiceConnection implements ServiceConnection {
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            RequestWorkEvent event;
-            mBoundToWorkerService = true;
-            while ((event = mWorkRequests.poll()) != null) {
-                getBus().post(event);
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-
-        }
     }
 }
