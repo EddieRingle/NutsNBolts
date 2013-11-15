@@ -6,5 +6,6 @@ public enum WorkStatus {
     WORKING,
     CANCELED,
     WAITING_TO_DELIVER,
-    FINISHED
+    RESULT_DELIVERED,
+    RESULT_REDELIVERED
 }

@@ -2,6 +2,9 @@ package io.github.eddieringle.android.libs.nutsnbolts.app;
 
 import android.content.Context;
 
+import java.util.Collections;
+import java.util.Map;
+
 public abstract class RequestWorkEvent<T> {
 
     private Context mReceivingContext = null;
@@ -13,6 +16,10 @@ public abstract class RequestWorkEvent<T> {
     }
 
     public abstract T doWork();
+
+    public Map getIdentifyingParams() {
+        return Collections.EMPTY_MAP;
+    }
 
     public Context getReceivingContext() {
         return mReceivingContext;

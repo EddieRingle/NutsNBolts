@@ -27,7 +27,7 @@ public class WorkerService extends Service {
 
     private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
 
-    private final Set<WorkBundle> mWaitingRequests = new HashSet<WorkBundle>();
+    private final Set<WorkBundle> mSavedResults = new HashSet<WorkBundle>();
 
     private final HashMap<Integer, RequestWorkEvent> mWorkRequests = new HashMap<Integer, RequestWorkEvent>();
 
@@ -50,19 +50,26 @@ public class WorkerService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        checkWaitingRequests();
+        checkSavedRequests();
         return new Binder();
     }
 
     @Override
     public void onRebind(Intent intent) {
         super.onRebind(intent);
-        checkWaitingRequests();
+        checkSavedRequests();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         return true;
+    }
+
+    @Subscribe
+    public void onRequestResultFlush(FlushResultEvent event) {
+        if (event != null && event.getTargetClazz() != null) {
+            clearResultsOfType(event.getTargetClazz());
+        }
     }
 
     @Subscribe
@@ -79,20 +86,48 @@ public class WorkerService extends Service {
         }
     }
 
-    void checkWaitingRequests() {
-        Iterator<WorkBundle> waitingItr = mWaitingRequests.iterator();
+    void checkSavedRequests() {
+        Iterator<WorkBundle> savedItr = mSavedResults.iterator();
         WorkBundle bundle;
-        while (waitingItr.hasNext()) {
-            bundle = waitingItr.next();
+        while (savedItr.hasNext()) {
+            bundle = savedItr.next();
             if (bundle.request != null) {
                 if (bundle.request.getReceivingContext() != null) {
-                    if (WorkStatus.WAITING_TO_DELIVER.equals(bundle.request.getWorkStatus())) {
-                        waitingItr.remove();
-                        whenDone(bundle.request, bundle.result);
-                    }
+                    whenDone(bundle.request, bundle.result);
                 }
             }
         }
+    }
+
+    void clearResultsOfType(Class<? extends RequestWorkEvent> clazz) {
+        Iterator<WorkBundle> savedItr = mSavedResults.iterator();
+        WorkBundle bundle;
+        if (clazz == null) {
+            return;
+        }
+        while (savedItr.hasNext()) {
+            bundle = savedItr.next();
+            if (bundle.request != null) {
+                if (bundle.request.getClass().getName().equals(clazz.getName())) {
+                    savedItr.remove();
+                }
+            }
+        }
+    }
+
+    void saveResult(WorkBundle bundle) {
+        Iterator<WorkBundle> bundleItr = mSavedResults.iterator();
+        WorkBundle itrBundle;
+        while (bundleItr.hasNext()) {
+            itrBundle = bundleItr.next();
+            if (bundle.request.getClass().getName().equals(itrBundle.request.getClass().getName())) {
+                if (bundle.request.getIdentifyingParams().equals(itrBundle.request.getIdentifyingParams())) {
+                    bundleItr.remove();
+                    break;
+                }
+            }
+        }
+        mSavedResults.add(bundle);
     }
 
     void whenDone(RequestWorkEvent workRequest, Object result) {
@@ -104,9 +139,9 @@ public class WorkerService extends Service {
             if (whenDone != null) {
                 workDoneClass = whenDone.value();
                 for (Constructor c : workDoneClass.getDeclaredConstructors()) {
-                    if (c.getGenericParameterTypes().length == 1) {
+                    if (c.getGenericParameterTypes().length == 2) {
                         try {
-                            workDoneEvent = workDoneClass.cast(c.newInstance(result));
+                            workDoneEvent = workDoneClass.cast(c.newInstance(workRequest, result));
                         } catch (Exception ignored) {
                         }
                         break;
@@ -119,7 +154,11 @@ public class WorkerService extends Service {
                         return;
                     }
                 }
-                workRequest.setWorkStatus(WorkStatus.FINISHED);
+                if (WorkStatus.RESULT_DELIVERED.equals(workRequest.getWorkStatus())) {
+                    workRequest.setWorkStatus(WorkStatus.RESULT_REDELIVERED);
+                } else {
+                    workRequest.setWorkStatus(WorkStatus.RESULT_DELIVERED);
+                }
                 NApplication.getBus().post(workDoneEvent);
             }
         }
@@ -153,8 +192,8 @@ public class WorkerService extends Service {
                     whenDone(mWorkRequest, result);
                 } else {
                     mWorkRequest.setWorkStatus(WorkStatus.WAITING_TO_DELIVER);
-                    mWaitingRequests.add(new WorkBundle(mWorkRequest, result));
                 }
+                saveResult(new WorkBundle(mWorkRequest, result));
             }
         }
     }
@@ -168,6 +207,23 @@ public class WorkerService extends Service {
         public WorkBundle(RequestWorkEvent request, Object result) {
             this.request = request;
             this.result = result;
+        }
+    }
+
+    public static class FlushResultEvent {
+
+        private Class<? extends RequestWorkEvent> mTargetClazz;
+
+        public FlushResultEvent(Class<? extends RequestWorkEvent> targetClazz) {
+            mTargetClazz = targetClazz;
+        }
+
+        public Class<? extends RequestWorkEvent> getTargetClazz() {
+            return mTargetClazz;
+        }
+
+        public void setTargetClazz(Class<? extends RequestWorkEvent> targetClazz) {
+            mTargetClazz = targetClazz;
         }
     }
 }
