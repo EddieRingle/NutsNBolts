@@ -86,6 +86,10 @@ public class NActivity extends Activity {
         return mBus;
     }
 
+    public DrawerLayout getDrawerLayout() {
+        return mDrawerLayout;
+    }
+
     public SharedPreferences getPrefs() {
         return mPrefs;
     }
