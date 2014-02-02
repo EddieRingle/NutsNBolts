@@ -116,8 +116,8 @@ public class NActivity extends Activity {
         DrawerLayout.LayoutParams leftLps;
         ViewGroup contentFrame;
         ViewGroup leftDrawer;
-        ViewGroup content = (ViewGroup) getWindow().getDecorView().findViewById(android.R.id.content);
-        ViewGroup parent = (ViewGroup) content.getParent();
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().findViewById(android.R.id.content);
+        ViewGroup content = (ViewGroup) root.getChildAt(0);
         if (mDrawerEnabled) {
             if (mDrawerLayout != null) {
                 return false;
@@ -156,9 +156,9 @@ public class NActivity extends Activity {
                 }
             };
             mDrawerLayout.setDrawerListener(mDrawerToggle);
-            parent.removeView(content);
+            root.removeView(content);
             contentFrame.addView(content);
-            parent.addView(mDrawerLayout);
+            root.addView(mDrawerLayout);
             return true;
         } else {
             if (mDrawerLayout != null) {
